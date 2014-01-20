@@ -1,0 +1,16 @@
+{
+  "name": "angular-superagent",
+  "repo": "wejendorp/angular-superagent",
+  "description": "Angular wrapper for Superagent",
+  "version": "0.0.1",
+  "keywords": [],
+  "dependencies": {
+    "visionmedia/superagent": "*"
+  },
+  "development": {},
+  "license": "MIT",
+  "main": "index.js",
+  "scripts": [
+    "index.js"
+  ]
+}
