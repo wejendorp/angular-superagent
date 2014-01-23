@@ -1,7 +1,9 @@
-
 # angular-superagent
 
-  Angular wrapper for Superagent
+  Angular wrapper for [Superagent](https://github.com/visionmedia/superagent).
+  
+  Written because the [Restangular](https://github.com/mgonto/restangular) api never made sense to me,
+  and superagent has a nicer api than [$http](http://docs.angularjs.org/api/ng.$http) or jQuery.
 
 ## Installation
 
