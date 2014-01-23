@@ -12,7 +12,48 @@
     $ bower install angular-superagent
 
 ## API
+The `Request` service works just like [superagent](https://github.com/visionmedia/superagent), except extended with promises and defaults via `RequestProvider`.
 
+The request can be written as default superagent, e.g.
+```js
+app.controller('AppCtrl', function(Request) {
+  Request.get('/data')
+    .query({page: 1})
+    .promise();
+})
+```
+
+### request#promise()
+Like `request#end`, but returns a promise instead of taking a callback.
+Returns a [$q](http://docs.angularjs.org/api/ng.$q) promise, that is resolved with the superagent response object.
+
+### request#end(fn)
+The classic superagent request end, but applies configured transformations if any.
+
+
+## Configure: RequestProvider
+### #baseUrl(url)
+Append this url to all requests made with superagent
+
+### #withCredentials()
+Sets `withCredentials()` as the default. Usable for CORS.
+
+### #setHeaders(headers)
+Takes a header object, extends
+
+### #timeout(n)
+Timeout requests after n ms.
+
+### #transform( fn(err, res, next) )
+Add a transformation to response object, before making the callback in `request#end`.
+Multiple transformations can be applied, and will be run in order of registration.
+
+### #then(success, error)
+Extends the promise chain returned from `request#promise()`,
+useful for conditional transformations.
+
+`success` and `error` are executed with `this` bound to expose `this.reject` and `this.resolve`
+functions, enabling each promise to either resolve or reject itself.
 
 
 
@@ -20,7 +61,7 @@
 
   The MIT License (MIT)
 
-  Copyright (c) 2014 <copyright holders>
+  Copyright (c) 2014 Jacob Wejendorp <jacob@wejendorp.dk>
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal

@@ -13,30 +13,55 @@ angular.module('services')
     transforms: []
   };
 
+  // Hack to make angular aware of this pending request. Useful for protractor tests.
+  var p;
+  function startRequest() {
+    p = $timeout(function(){
+      throw new Error('Request timed out after '+options.timeout+' ms');
+    }, options.timeout);
+  }
+  function endRequest() {
+    $timeout.cancel(p); // angular no longer has pending req.
+  }
+
   return {
-    '$get' : function($q, $timeout) {
+    '$get' : function($q, $timeout, $log) {
       // Promisify this thing!
       agent.Request.prototype._end = agent.Request.prototype.end;
+      agent.Request.prototype.end = function(fn) {
+
+        try {
+          startRequest();
+          this._end(function(err, res) {
+            endRequest();
+
+            function next() {
+              var args, transform = options.transforms.shift();
+              if(!transform) return fn(err, res);
+
+              args = Array.prototype.slice.call(arguments);
+              transform.apply({}, args.push(next));
+            }
+
+            next(err, res);
+          });
+        } catch (e) {
+          $log.debug(e);
+          fn(e);
+        }
+      };
 
       agent.Request.prototype.promise = function() {
         var deferred = $q.defer();
 
-        // Hack to make angular aware of this pending request
-        var p = $timeout(function(){
-          throw 'Request timed out after '+options.timeout+' ms';
-        }, options.timeout);
-
-        var cleanUp = function() {
-          $timeout.cancel(p); // angular no longer has pending req.
-        };
-        deferred.promise.finally(cleanUp);
+        startRequest();
+        deferred.promise.finally(endRequest);
 
 
         this.end(function(err, res) {
           if (err || !res.ok) {
             if(err) {
-              /* jshint devel:true */
-              console.error(err);
+              $log.debug(err);
             }
             return deferred.reject(res || {});
           }
@@ -70,14 +95,6 @@ angular.module('services')
         return chain;
       };
 
-      // agent.Request.prototype.end = function(fn) {
-      //   this._end(function(err, res) {
-      //     options.transforms.splice
-
-
-      //   });
-      // };
-
 
       // Configure request defaults
       var methods = ['get', 'head', 'del', 'put', 'post', 'patch'];
@@ -85,8 +102,9 @@ angular.module('services')
         if(agent['_'+m]) return;
         agent['_'+m] = agent[m];
         agent[m] = function() {
-          arguments[0] = options.baseUrl + arguments[0]; // url
-          var method = agent['_'+m].apply({}, arguments);
+          var args = Array.prototype.slice.call(arguments);
+          args[0] = options.baseUrl + args[0]; // url
+          var method = agent['_'+m].apply({}, args);
           if(options.credentials) method.withCredentials();
           if(options.headers) method.set(options.headers);
           return method;
@@ -111,10 +129,10 @@ angular.module('services')
       options.timeout = timeout;
       return this;
     },
-    // transform: function(fn) {
-    //   options.transforms.push(fn);
-    //   return this;
-    // },
+    transform: function(fn) {
+      options.transforms.push(fn);
+      return this;
+    },
     then: function(success, error) {
       options.promises.push([success, error]);
       return this;
