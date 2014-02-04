@@ -1,7 +1,6 @@
-
 // Convenience service to wrap Superagent with defaults and promises
 //
-angular.module('services')
+angular.module('ng-superagent')
 .provider('Request', function() {
   var agent = window.superagent;
 
