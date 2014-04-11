@@ -1,140 +1,127 @@
-// Convenience service to wrap Superagent with defaults and promises
-//
-angular.module('ng-superagent')
+angular.module('ngSuperagent', ['ng'])
 .provider('Request', function() {
-  var agent = window.superagent;
+  var agent   = require('superagent');
+  var Emitter = require('emitter');
 
-  var options = {
-    baseUrl:    '',
-    timeout:    10000,
-    headers:    {},
-    promises:   [],
-    transforms: []
+  var $q, $timeout, $log;
+  Emitter.call(agent);
+
+  var requestProvider = {};
+  requestProvider.defaults = {
+    baseUrl: '',
+    headers: {},
+    credentials: true,
+    timeout: 10000
   };
+  // Request transformations
+  requestProvider.transforms = [];
+  requestProvider.resolvers = [];
 
-  // Hack to make angular aware of this pending request. Useful for protractor tests.
-  var p;
-  function startRequest() {
-    p = $timeout(function(){
-      throw new Error('Request timed out after '+options.timeout+' ms');
-    }, options.timeout);
-  }
-  function endRequest() {
-    $timeout.cancel(p); // angular no longer has pending req.
-  }
+  requestProvider.$get = function getService(_$q_, _$timeout_, _$log_) {
+    $q = _$q_;
+    $timeout = _$timeout_;
+    $log = _$log_;
 
-  return {
-    '$get' : function($q, $timeout, $log) {
-      // Promisify this thing!
-      agent.Request.prototype._end = agent.Request.prototype.end;
-      agent.Request.prototype.end = function(fn) {
+    requestProvider.transform('set', requestProvider.defaults.headers);
+    requestProvider.transform('withCredentials', null, requestProvider.defaults.credentials);
+    requestProvider.transform('timeout', requestProvider.defaults.timeout);
 
-        try {
-          startRequest();
-          this._end(function(err, res) {
-            endRequest();
+    var methods = ['get', 'head', 'del', 'put', 'post', 'patch'];
+    methods.forEach(function(m) {
+      if(agent['_'+m]) return;
+      agent['_'+m] = agent[m];
+      agent[m] = function() {
+        var timer;
+        // Prepend defaults.baseUrl to all requests:
+        var args = Array.prototype.slice.call(arguments);
+        args[0] = requestProvider.defaults.baseUrl + args[0];
+        var request = agent['_'+m].apply({}, args);
 
-            function next() {
-              var args, transform = options.transforms.shift();
-              if(!transform) return fn(err, res);
+        applyTransforms(request);
 
-              args = Array.prototype.slice.call(arguments);
-              transform.apply({}, args.push(next));
-            }
+        // Make angular aware of requests
+        request.on('request', startRequest);
+        request.on('end',   endRequest);
+        request.on('abort', endRequest);
+        request.on('error', endRequest);
 
-            next(err, res);
-          });
-        } catch (e) {
-          $log.debug(e);
-          fn(e);
+        function startRequest() {
+          timer = $timeout(function timeout() {
+            deferred.reject(new Error('Request timed out'));
+            timer = null;
+          }, requestProvider.defaults.timeout);
         }
+        function endRequest() {
+          $timeout.cancel(timer);
+        }
+
+        // Make events available in provider
+        request.on('request', providerEmit(request, 'request'));
+        request.on('error', providerEmit(request, 'error'));
+        request.on('abort', providerEmit(request, 'abort'));
+        request.on('end', providerEmit(request, 'end'));
+
+        return request;
       };
+    });
 
-      agent.Request.prototype.promise = function() {
-        var deferred = $q.defer();
-
-        startRequest();
-        deferred.promise.finally(endRequest);
-
-
-        this.end(function(err, res) {
-          if (err || !res.ok) {
-            if(err) {
-              $log.debug(err);
-            }
-            return deferred.reject(res || {});
-          }
-          return deferred.resolve(res);
-        });
-
-
-        var chain = deferred.promise;
-        // Make this.reject / this.resolve possible since angular returns a new promise for each then
-        var methods = {
-          reject: $q.reject,
-          resolve: $q.when
-        };
-
-        // Wrap in helper to ignore non-returning handlers
-        var wrap = function(fn) {
-          return function(val) {
-            var res = fn(val);
-            if(typeof res === 'undefined') {
-              return val;
-            }
-            return res;
-          };
-        };
-
-        options.promises.forEach(function(fns) {
-          var success = fns[0] ? wrap(fns[0].bind(methods)) : null;
-          var error   = fns[1] ? wrap(fns[1].bind(methods)) : null;
-          chain = chain.then(success, error);
-        });
-        return chain;
-      };
-
-
-      // Configure request defaults
-      var methods = ['get', 'head', 'del', 'put', 'post', 'patch'];
-      methods.forEach(function(m) {
-        if(agent['_'+m]) return;
-        agent['_'+m] = agent[m];
-        agent[m] = function() {
-          var args = Array.prototype.slice.call(arguments);
-          args[0] = options.baseUrl + args[0]; // url
-          var method = agent['_'+m].apply({}, args);
-          if(options.credentials) method.withCredentials();
-          if(options.headers) method.set(options.headers);
-          return method;
-        };
-      });
-
-      return agent;
-    },
-    setHeaders : function(headers) {
-      options.headers = _.extend(options.headers, headers);
-      return this;
-    },
-    withCredentials : function() {
-      options.credentials = true;
-      return this;
-    },
-    baseUrl: function(url) {
-      options.baseUrl = url;
-      return this;
-    },
-    timeout: function(timeout) {
-      options.timeout = timeout;
-      return this;
-    },
-    transform: function(fn) {
-      options.transforms.push(fn);
-      return this;
-    },
-    then: function(success, error) {
-      options.promises.push([success, error]);
-      return this;
-    }
+    return agent;
   };
+  function providerEmit(ctx, type) {
+    return function() {
+      agent.emit.apply(ctx, Array.prototype.unshift.call(arguments, type));
+    };
+  }
+  function applyTransforms(req) {
+    requestProvider.transforms.forEach(function(transformer) {
+      if(typeof transformer.condition !== 'undefined' &&
+         !transformer.condition) return;
+
+      req[transformer.fn].call(req, transformer.params);
+    });
+  }
+  requestProvider.transform = function (type, params, condition) {
+    requestProvider.transforms.push({
+      fn:     type,
+      params: params
+    });
+  };
+
+  // Promise specific
+  //
+  // Chaining
+  requestProvider.addResolver = function(success, error) {
+    requestProvider.resolvers.push([success, error]);
+  };
+
+  // Add promise method to requests
+  agent.Request.prototype.promise = function() {
+    var deferred = $q.defer();
+    var methods = {
+      reject: $q.reject,
+      resolve: $q.when
+    };
+
+    this.end(function(err, res) {
+      var resolution = requestProvider.resolvers.reduce(function(promise, resolvers) {
+        var success = resolvers[0] ? resolvers[0].bind(methods) : null;
+        var error   = resolvers[1] ? resolvers[1].bind(methods) : null;
+        return promise.then(success, error);
+      }, $q.when([err, res]));
+
+      return deferred.resolve(resolution);
+    });
+
+    return deferred.promise;
+  };
+  // Register default resolution. Only superagent errors are rejected.
+  requestProvider.addResolver(function(args) {
+    var err = args[0];
+    var res = args[1];
+    if(err) return this.reject(err);
+    this.resolve(res);
+  });
+
+
+  return requestProvider;
 });
