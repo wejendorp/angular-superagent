@@ -5,9 +5,13 @@
   "version": "0.0.1",
   "keywords": [],
   "dependencies": {
-    "visionmedia/superagent": "*"
+    "visionmedia/superagent": "*",
+    "component/emitter": "*"
   },
-  "development": {},
+  "development": {
+    "visionmedia/debug": "0.7.4",
+    "ianstormtaylor/assert": "*"
+  },
   "license": "MIT",
   "main": "index.js",
   "scripts": [

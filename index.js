@@ -4,7 +4,7 @@ angular.module('ngSuperagent', ['ng'])
   var Emitter = require('emitter');
 
   var $q, $timeout, $log;
-  Emitter.call(agent);
+  Emitter(agent);
 
   var requestProvider = {};
   requestProvider.defaults = {
@@ -69,7 +69,9 @@ angular.module('ngSuperagent', ['ng'])
   };
   function providerEmit(ctx, type) {
     return function() {
-      agent.emit.apply(ctx, Array.prototype.unshift.call(arguments, type));
+      var args = Array.prototype.slice.call(arguments);
+      Array.prototype.unshift.call(args, type);
+      agent.emit.apply(agent, args);
     };
   }
   function applyTransforms(req) {

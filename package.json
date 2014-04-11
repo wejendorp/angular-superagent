@@ -1,0 +1,33 @@
+{
+  "name": "angular-superagent",
+  "version": "0.0.0",
+  "description": "Angular wrapper for [Superagent](https://github.com/visionmedia/superagent).",
+  "main": "test/server.js",
+  "directories": {
+    "example": "examples",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "make test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/wejendorp/angular-superagent.git"
+  },
+  "author": "Jacob Wejendorp",
+  "license": "BSD",
+  "bugs": {
+    "url": "https://github.com/wejendorp/angular-superagent/issues"
+  },
+  "homepage": "https://github.com/wejendorp/angular-superagent",
+  "devDependencies": {
+    "component": "component/component#fa95027ce8",
+    "express": "~3.1.0",
+    "hbs": "~2.3.0",
+    "mocha-phantomjs": "~3.1.5",
+    "uglify-js": "~2.4.1",
+    "underscore": "~1.4.3",
+    "phantomjs": "~1.9.2-2",
+    "gravy": "*"
+  }
+}

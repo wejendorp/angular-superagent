@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+<head>
+  <title>integrations tests</title>
+  <link rel="stylesheet" href="test/mocha.css">
+  <!-- amd -->
+  <script src='//cdnjs.cloudflare.com/ajax/libs/require.js/2.1.9/require.js'></script>
+</head>
+<body>
+  <div id="mocha"></div>
+  <script src="test/mocha.js"></script>
+  <script>
+    mocha.setup({
+      ui: 'bdd',
+      ignoreLeaks: true,
+      slow: 300,
+      timeout: 10000
+    });
+  </script>
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.16/angular.js"></script>
+  <script src="http://code.angularjs.org/1.2.16/angular-mocks.js"></script>
+  <script src="build/build.js"></script>
+  <script src="test/sinon.js"></script>
+  <script src="test/spec/agent.js"></script>
+  <script>
+    if (window.mochaPhantomJS) {
+      require('debug').disable();
+      mochaPhantomJS.run();
+    } else {
+      require('debug').enable('*');
+      // require('gravy')(mocha.run());
+    }
+    mocha.run();
+
+    // angular.module('ngSuperagent').config(function(RequestProvider) { console.log(RequestProvider); }).run(function(Request) { console.log(Request); })
+  </script>
+</body>
+</html>
