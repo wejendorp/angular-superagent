@@ -1,6 +1,6 @@
 {
   "name": "angular-superagent",
-  "version": "0.0.0",
+  "version": "0.2.1",
   "description": "Angular wrapper for [Superagent](https://github.com/visionmedia/superagent).",
   "main": "test/server.js",
   "directories": {
