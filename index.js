@@ -39,28 +39,19 @@ angular.module('ngSuperagent', ['ng'])
 
         applyTransforms(request);
 
-
         // Make angular aware of requests
-        request.on('request', startRequest);
-        request.on('end',   endRequest);
-        request.on('abort', endRequest);
-        request.on('error', endRequest);
+        request.on('ngRequest', startRequest);
+        request.on('ngEnd',   endRequest);
 
         function startRequest() {
           timer = $timeout(function timeout() {
-            deferred.reject(new Error('Request timed out'));
+            request.emit('error', new Error('Request timed out'));
             timer = null;
           }, requestProvider.defaults.timeout);
         }
         function endRequest() {
           $timeout.cancel(timer);
         }
-
-        // Make events available in provider
-        request.on('request', providerEmit('request'));
-        request.on('error', providerEmit('error'));
-        request.on('abort', providerEmit('abort'));
-        request.on('end', providerEmit('end'));
 
         return request;
       };
@@ -84,8 +75,6 @@ angular.module('ngSuperagent', ['ng'])
             return promise.then(success, error);
           }, err || $q.when(res));
 
-          //
-          agent.emit('end', this);
           deferred.resolve(resolution);
           $scope.$apply();
         });
@@ -94,10 +83,19 @@ angular.module('ngSuperagent', ['ng'])
         return deferred.promise;
       };
       agent.Request.prototype._end = agent.Request.prototype._end || agent.Request.prototype.end;
-      agent.Request.prototype.end = function() {
-        var args = Array.prototype.slice.call(arguments);
-        var request = this._end.apply(this, args);
+      agent.Request.prototype.end = function(cb) {
+        var request = this;
+
+        request.emit('ngRequest');
         agent.emit('request');
+
+        this._end(function(err, res) {
+          request.emit('ngEnd');
+
+          if(err) { agent.emit('error', err); }
+          agent.emit('end', request);
+          cb(err, res);
+        });
       };
     });
 
