@@ -21,14 +21,19 @@ var app = express()
   .get('/', function (req, res, next) {
     res.render('index.html');
   })
+  .get('/error', function(req, res) {
+    res.send(500);
+  })
+  .get('/test/error', function(req, res) {
+    res.json({status: 'error'});
+  })
+  .all('/test/*', function(req, res) {
+    res.json({status: 'ok'});
+  })
   .listen(4334, function () {
     fs.writeFileSync(__dirname + '/pid.txt', process.pid, 'utf-8');
     console.log('Started testing server on port 4334...');
   });
-
-/**
- * Send
- */
 
 function send(req, res, next){
   var test = 0 == req.url.indexOf('/test/integrations');

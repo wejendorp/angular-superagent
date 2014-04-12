@@ -6,7 +6,8 @@
   "keywords": [],
   "dependencies": {
     "visionmedia/superagent": "*",
-    "component/emitter": "*"
+    "component/emitter": "*",
+    "chaijs/chai": "*"
   },
   "development": {
     "visionmedia/debug": "0.7.4",

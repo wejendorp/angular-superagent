@@ -3,7 +3,7 @@ angular.module('ngSuperagent', ['ng'])
   var agent   = require('superagent');
   var Emitter = require('emitter');
 
-  var $q, $timeout, $log;
+  var $q, $timeout, $log, $scope;
   Emitter(agent);
 
   var requestProvider = {};
@@ -17,10 +17,11 @@ angular.module('ngSuperagent', ['ng'])
   requestProvider.transforms = [];
   requestProvider.resolvers = [];
 
-  requestProvider.$get = function getService(_$q_, _$timeout_, _$log_) {
+  requestProvider.$get = function getService(_$q_, _$timeout_, _$log_, _$rootScope_) {
     $q = _$q_;
     $timeout = _$timeout_;
     $log = _$log_;
+    $scope = _$rootScope_;
 
     requestProvider.transform('set', requestProvider.defaults.headers);
     requestProvider.transform('withCredentials', null, requestProvider.defaults.credentials);
@@ -28,8 +29,7 @@ angular.module('ngSuperagent', ['ng'])
 
     var methods = ['get', 'head', 'del', 'put', 'post', 'patch'];
     methods.forEach(function(m) {
-      if(agent['_'+m]) return;
-      agent['_'+m] = agent[m];
+      agent['_'+m] = agent['_'+m] || agent[m];
       agent[m] = function() {
         var timer;
         // Prepend defaults.baseUrl to all requests:
@@ -56,18 +56,47 @@ angular.module('ngSuperagent', ['ng'])
         }
 
         // Make events available in provider
-        request.on('request', providerEmit(request, 'request'));
-        request.on('error', providerEmit(request, 'error'));
-        request.on('abort', providerEmit(request, 'abort'));
-        request.on('end', providerEmit(request, 'end'));
+        request.on('request', providerEmit('request'));
+        request.on('error', providerEmit('error'));
+        request.on('abort', providerEmit('abort'));
+        request.on('end', providerEmit('end'));
 
         return request;
+      };
+      // Add promise method to requests
+      agent.Request.prototype.promise = function() {
+        var deferred = $q.defer();
+        var methods = {
+          reject: $q.reject,
+          resolve: $q.when
+        };
+
+        this.end(function(err, res) {
+          if(err) {
+            agent.emit('error', err);
+            err = $q.reject(err);
+          }
+
+          var resolution = requestProvider.resolvers.reduce(function(promise, resolvers) {
+            var success = resolvers[0] ? resolvers[0].bind(methods) : null;
+            var error   = resolvers[1] ? resolvers[1].bind(methods) : null;
+            return promise.then(success, error);
+          }, err || $q.when(res));
+
+          //
+          agent.emit('end', this);
+          deferred.resolve(resolution);
+          $scope.$apply();
+        });
+
+
+        return deferred.promise;
       };
     });
 
     return agent;
   };
-  function providerEmit(ctx, type) {
+  function providerEmit(type) {
     return function() {
       var args = Array.prototype.slice.call(arguments);
       Array.prototype.unshift.call(args, type);
@@ -78,7 +107,6 @@ angular.module('ngSuperagent', ['ng'])
     requestProvider.transforms.forEach(function(transformer) {
       if(typeof transformer.condition !== 'undefined' &&
          !transformer.condition) return;
-
       req[transformer.fn].call(req, transformer.params);
     });
   }
@@ -95,34 +123,6 @@ angular.module('ngSuperagent', ['ng'])
   requestProvider.addResolver = function(success, error) {
     requestProvider.resolvers.push([success, error]);
   };
-
-  // Add promise method to requests
-  agent.Request.prototype.promise = function() {
-    var deferred = $q.defer();
-    var methods = {
-      reject: $q.reject,
-      resolve: $q.when
-    };
-
-    this.end(function(err, res) {
-      var resolution = requestProvider.resolvers.reduce(function(promise, resolvers) {
-        var success = resolvers[0] ? resolvers[0].bind(methods) : null;
-        var error   = resolvers[1] ? resolvers[1].bind(methods) : null;
-        return promise.then(success, error);
-      }, $q.when([err, res]));
-
-      return deferred.resolve(resolution);
-    });
-
-    return deferred.promise;
-  };
-  // Register default resolution. Only superagent errors are rejected.
-  requestProvider.addResolver(function(args) {
-    var err = args[0];
-    var res = args[1];
-    if(err) return this.reject(err);
-    this.resolve(res);
-  });
 
 
   return requestProvider;
