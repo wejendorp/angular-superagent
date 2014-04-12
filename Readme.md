@@ -1,7 +1,7 @@
 # angular-superagent
 
   Angular wrapper for [Superagent](https://github.com/visionmedia/superagent).
-  
+
   Written because the [Restangular](https://github.com/mgonto/restangular) api never made sense to me,
   and superagent has a nicer api than [$http](http://docs.angularjs.org/api/ng.$http) or jQuery.
 
@@ -14,7 +14,8 @@
     $ bower install angular-superagent
 
 ## API
-The `Request` service works just like [superagent](https://github.com/visionmedia/superagent), except extended with promises and defaults via `RequestProvider`.
+The `Request` service works just like [superagent](https://github.com/visionmedia/superagent),
+except extended with promises and defaults via `RequestProvider.defaults`.
 
 The request can be written as default superagent, e.g.
 ```js
@@ -30,27 +31,22 @@ Like `request#end`, but returns a promise instead of taking a callback.
 Returns a [$q](http://docs.angularjs.org/api/ng.$q) promise, that is resolved with the superagent response object.
 
 ### request#end(fn)
-The classic superagent request end, but applies configured transformations if any.
+The classic superagent request end, but with configured defaults
 
 
 ## Configure: RequestProvider
-### #baseUrl(url)
-Append this url to all requests made with superagent
+### defaults
+To set new defaults just override the options here:
+```js
+RequestProvider.defaults = {
+  baseUrl: '',
+  headers: {},
+  credentials: true,
+  timeout: 10000
+};
+```
 
-### #withCredentials()
-Sets `withCredentials()` as the default. Usable for CORS.
-
-### #setHeaders(headers)
-Takes a header object, extends
-
-### #timeout(n)
-Timeout requests after n ms.
-
-### #transform( fn(err, res, next) )
-Add a transformation to response object, before making the callback in `request#end`.
-Multiple transformations can be applied, and will be run in order of registration.
-
-### #then(success, error)
+### #addResolver(success, error)
 Extends the promise chain returned from `request#promise()`,
 useful for conditional transformations.
 

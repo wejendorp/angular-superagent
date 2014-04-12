@@ -1,7 +1,7 @@
 {
   "name": "angular-superagent",
-  "main": "index.js",
-  "version": "0.1.0",
+  "main": "release/angular-superagent.js",
+  "version": "0.2.0",
   "homepage": "https://github.com/wejendorp/angular-superagent",
   "authors": [
     "Jacob Wejendorp <jacob@wejendorp.dk>"

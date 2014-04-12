@@ -1,6 +1,6 @@
 
 BROWSERS= "ie6..11, chrome, safari, firefox"
-SRC= $(wildcard index.js lib/*.js)
+SRC= $(wildcard index.js)
 tests ?= *
 BINS= node_modules/.bin
 C= $(BINS)/component
@@ -15,6 +15,9 @@ build: node_modules components $(SRC)
 
 components: component.json
 	@$(C) install --dev
+
+release: node_modules components
+	@$(C) build -o release -n angular-superagent
 
 kill:
 	-@test -e test/pid.txt \
