@@ -39,6 +39,7 @@ angular.module('ngSuperagent', ['ng'])
 
         applyTransforms(request);
 
+
         // Make angular aware of requests
         request.on('request', startRequest);
         request.on('end',   endRequest);
@@ -91,6 +92,12 @@ angular.module('ngSuperagent', ['ng'])
 
 
         return deferred.promise;
+      };
+      agent.Request.prototype._end = agent.Request.prototype._end || agent.Request.prototype.end;
+      agent.Request.prototype.end = function() {
+        var args = Array.prototype.slice.call(arguments);
+        var request = this._end.apply(this, args);
+        agent.emit('request');
       };
     });
 

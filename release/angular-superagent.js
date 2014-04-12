@@ -1431,6 +1431,13 @@ angular.module('ngSuperagent', ['ng'])
 
         applyTransforms(request);
 
+
+        request._end = request.end;
+        request.end = function() {
+          var args = Array.prototype.slice.call(arguments);
+          var request = agent._end.apply({}, args);
+          request.emit('request');
+        };
         // Make angular aware of requests
         request.on('request', startRequest);
         request.on('end',   endRequest);
