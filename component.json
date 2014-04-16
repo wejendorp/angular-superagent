@@ -2,8 +2,13 @@
   "name": "angular-superagent",
   "repo": "wejendorp/angular-superagent",
   "description": "Angular wrapper for Superagent",
-  "version": "0.2.1",
-  "keywords": [],
+  "version": "0.2.2",
+  "keywords": [
+    "angular",
+    "superagent",
+    "http",
+    "xhr"
+  ],
   "dependencies": {
     "visionmedia/superagent": "*",
     "component/emitter": "*"
