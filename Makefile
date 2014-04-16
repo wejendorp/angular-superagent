@@ -16,8 +16,9 @@ build: node_modules components $(SRC)
 components: component.json
 	@$(C) install --dev
 
-release: node_modules components
-	@$(C) build -o release -n angular-superagent
+release: node_modules components $(SRC)
+	@$(C) build
+	@cat build/build.js loader.js > release/angular-superagent.js 
 
 kill:
 	-@test -e test/pid.txt \
@@ -44,7 +45,7 @@ test-sauce: build server
 	@BROWSERS=$(BROWSERS) $(GRAVY) --url $(TEST)
 
 clean:
-	rm -rf components build
+	rm -rf components release
 
-.PHONY: clean server test test-browser
+.PHONY: release clean server test test-browser
 .PHONY: test-sauce test-coverage

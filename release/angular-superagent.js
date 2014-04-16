@@ -644,13 +644,13 @@ Response.prototype.setStatusProperties = function(status){
 Response.prototype.toError = function(){
   var req = this.req;
   var method = req.method;
-  var path = req.path;
+  var url = req.url;
 
-  var msg = 'cannot ' + method + ' ' + path + ' (' + this.status + ')';
+  var msg = 'cannot ' + method + ' ' + url + ' (' + this.status + ')';
   var err = new Error(msg);
   err.status = this.status;
   err.method = method;
-  err.path = path;
+  err.url = url;
 
   return err;
 };
@@ -689,6 +689,15 @@ function Request(method, url) {
  */
 
 Emitter(Request.prototype);
+
+/**
+ * Allow for extension
+ */
+
+Request.prototype.use = function(fn) {
+  fn(this);
+  return this;
+}
 
 /**
  * Set timeout to `ms`.
@@ -1071,6 +1080,7 @@ Request.prototype.end = function(fn){
   }
 
   // send stuff
+  this.emit('request', this);
   xhr.send(data);
   return this;
 };
@@ -1455,9 +1465,12 @@ angular.module('ngSuperagent', ['ng'])
           resolve: $q.when
         };
 
+        var request = this;
         this.end(function(err, res) {
           if(err) {
             agent.emit('error', err);
+            err.method = request.method;
+            err.url = request.url;
             err = $q.reject(err);
           }
 
@@ -1542,3 +1555,5 @@ require.alias("component-emitter/index.js", "angular-superagent/deps/emitter/ind
 require.alias("component-emitter/index.js", "emitter/index.js");
 
 require.alias("angular-superagent/index.js", "angular-superagent/index.js");
+// Loader for bower releases
+require('angular-superagent');

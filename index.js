@@ -63,9 +63,12 @@ angular.module('ngSuperagent', ['ng'])
           resolve: $q.when
         };
 
+        var request = this;
         this.end(function(err, res) {
           if(err) {
             agent.emit('error', err);
+            err.method = request.method;
+            err.url = request.url;
             err = $q.reject(err);
           }
 
