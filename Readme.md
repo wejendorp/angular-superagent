@@ -12,6 +12,11 @@
     $ component install wejendorp/angular-superagent
 
     $ bower install angular-superagent
+    
+  Include `release/angular-superagent.js` and register the `ngSuperagent` module in your app.
+  
+    angular.module('app', ['ngSuperagent']);
+
 
 ## API
 The `Request` service works just like [superagent](https://github.com/visionmedia/superagent),
