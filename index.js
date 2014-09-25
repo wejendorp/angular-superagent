@@ -17,7 +17,7 @@ angular.module('ngSuperagent', ['ng'])
   requestProvider.transforms = [];
   requestProvider.resolvers = [];
 
-  requestProvider.$get = function getService(_$q_, _$timeout_, _$log_, _$rootScope_) {
+  requestProvider.$get = ['$q', '$timeout', '$log', '$rootScope', function getService(_$q_, _$timeout_, _$log_, _$rootScope_) {
     $q = _$q_;
     $timeout = _$timeout_;
     $log = _$log_;
@@ -103,7 +103,7 @@ angular.module('ngSuperagent', ['ng'])
     });
 
     return agent;
-  };
+  }];
   function providerEmit(type) {
     return function() {
       var args = Array.prototype.slice.call(arguments);

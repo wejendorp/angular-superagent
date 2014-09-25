@@ -211,7 +211,7 @@ require.register("component-reduce/index.js", function(exports, require, module)
  * TODO: combatible error handling?
  */
 
-module.exports = function(arr, fn, initial){  
+module.exports = function(arr, fn, initial){
   var idx = 0;
   var len = arr.length;
   var curr = arguments.length == 3
@@ -221,7 +221,7 @@ module.exports = function(arr, fn, initial){
   while (idx < len) {
     curr = fn.call(null, curr, arr[idx], ++idx, arr);
   }
-  
+
   return curr;
 };
 });
@@ -1419,7 +1419,7 @@ angular.module('ngSuperagent', ['ng'])
   requestProvider.transforms = [];
   requestProvider.resolvers = [];
 
-  requestProvider.$get = function getService(_$q_, _$timeout_, _$log_, _$rootScope_) {
+  requestProvider.$get = ['$q', '$timeout', '$log', '$rootScope', function getService(_$q_, _$timeout_, _$log_, _$rootScope_) {
     $q = _$q_;
     $timeout = _$timeout_;
     $log = _$log_;
@@ -1505,7 +1505,7 @@ angular.module('ngSuperagent', ['ng'])
     });
 
     return agent;
-  };
+  }];
   function providerEmit(type) {
     return function() {
       var args = Array.prototype.slice.call(arguments);
